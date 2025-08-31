@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Community Mangrove Watch</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+<style>
+  body,html{margin:0;padding:0;font-family:sans-serif;background:#f8fafc;color:#2c3e50;}
+  header{background:#2d5016;color:#fff;position:sticky;top:0;z-index:1000;padding:1rem;}
+  nav{display:flex;justify-content:space-between;align-items:center;max-width:1200px;margin:auto;}
+  .logo{font-weight:700;font-size:1.5rem;display:flex;align-items:center;gap:0.5rem;}
+  .nav-links{list-style:none;display:flex;gap:1.5rem;}
+  .nav-links a{color:#fff;text-decoration:none;}
+  .hero{background:linear-gradient(rgba(0,0,0,0.4),rgba(0,0,0,0.4)),url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1920&q=80') no-repeat center/cover;color:#fff;text-align:center;padding:4rem 1rem;}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;max-width:1200px;margin:2rem auto;text-align:center;}
+  .stat-card{background:#fff;padding:1.5rem;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.1);}
+  .stat-number{font-size:2rem;font-weight:700;color:#2d5016;}
+  .btn{padding:0.6rem 1.2rem;border:none;border-radius:5px;cursor:pointer;font-size:1rem;}
+  .btn-primary{background:#2d5016;color:#fff;}
+  .btn-primary:hover{background:#1a3312;}
+  .btn-secondary{background:#8dbb6a;color:#2c3e50;}
+  .btn-secondary:hover{background:#c3e6a8;}
+  .btn-outline{background:transparent;border:2px solid #2d5016;color:#2d5016;}
+  .btn-outline:hover{background:#2d5016;color:#fff;}
+  form{max-width:600px;margin:auto;background:#fff;padding:1.5rem;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.1);}
+  label{display:block;margin:0.5rem 0 0.2rem;}
+  input,select,textarea{width:100%;padding:0.5rem;border:1.5px solid #ddd;border-radius:5px;font-size:1rem;}
+  textarea{resize:vertical;}
+  #map{height:400px;border-radius:8px;max-width:1200px;margin:2rem auto;}
+  section{max-width:1200px;margin:3rem auto;padding:0 1rem;}
+  .card{background:#fff;padding:1rem;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.1);margin-bottom:2rem;}
+  .badge{padding:0.2rem 0.6rem;border-radius:20px;font-size:0.75rem;font-weight:700;margin-left:0.5rem;}
+  .badge-eco{background:gold;color:#2c3e50;}
+  .badge-protector{background:silver;color:#2c3e50;}
+  footer{background:#1a3312;color:#fff;padding:2rem 1rem;text-align:center;}
+  @media(max-width:768px){.nav-links{display:none;flex-direction:column;background:#2d5016;position:absolute;top:60px;right:0;left:0;padding:1rem;} .nav-links.active{display:flex;} .hero{padding:3rem 1rem;}}
+</style>
+</head>
+<body>
+<header>
+  <nav>
+    <div class="logo"><i class="fas fa-tree"></i> Mangrove Watch</div>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#home">Home</a></li><li><a href="#report-online">Report</a></li><li><a href="#map-section">Map</a></li><li><a href="#community">Community</a></li><li><a href="#education">Education</a></li><li><a href="#admin">Admin</a></li>
+    </ul>
+    <button id="menuBtn" class="btn btn-outline"><i class="fas fa-bars"></i></button>
+  </nav>
+</header>
+
+<section id="home" class="hero">
+  <h1>🌱 Community Mangrove Watch – Protect Our Mangroves Together</h1>
+  <p>Join our community-driven initiative to monitor, protect, and restore mangrove ecosystems along our coastlines.</p>
+  <div style="margin-top:1.5rem;">
+    <button class="btn btn-primary" onclick="scrollToSection('report-online')">Report Online</button>
+    <button class="btn btn-secondary" onclick="scrollToSection('report-offline')">Report via SMS/USSD</button>
+    <button class="btn btn-secondary" onclick="scrollToSection('community')">Join Community</button>
+  </div>
+</section>
+
+<section class="stats">
+  <div class="stat-card"><div class="stat-number" id="totalReports">1234</div><div>Total Reports</div></div>
+  <div class="stat-card"><div class="stat-number" id="mangroveCoverage">5678 ha</div><div>Mangrove Coverage</div></div>
+  <div class="stat-card"><div class="stat-number" id="activeVolunteers">89</div><div>Active Volunteers</div></div>
+</section>
+
+<section id="report-online" class="card">
+  <h2>Online Reporting Form</h2>
+  <form id="reportForm">
+    <label>Name (optional)</label><input type="text" id="name" name="name" placeholder="Your name" />
+    <label>Type of Issue *</label>
+    <select id="issueType" name="issueType" required>
+      <option value="">Select issue</option>
+      <option value="illegal_cutting">Illegal Cutting</option>
+      <option value="pollution">Pollution</option>
+      <option value="damage">Damage</option>
+      <option value="disease">Disease</option>
+      <option value="other">Other</option>
+    </select>
+    <label>Location *</label>
+    <input type="text" id="location" name="location" placeholder="Enter location or use GPS" required />
+    <button type="button" class="btn btn-outline" style="margin:0.5rem 0;" onclick="getLocation()">Use My GPS</button>
+    <label>Photo Upload</label><input type="file" id="photo" name="photo" accept="image/*" capture="environment" />
+    <label>Description *</label><textarea id="description" name="description" rows="4" placeholder="Describe the issue" required></textarea>
+    <label>Date & Time *</label><input type="datetime-local" id="dateTime" name="dateTime" required />
+    <div id="aiAnalysis" style="display:none;padding:0.5rem;background:#e8f5e8;border-radius:5px;margin:1rem 0;">
+      <i class="fas fa-robot"></i> AI Analysis: <span id="aiResult">Analyzing image...</span>
+    </div>
+    <button type="submit" class="btn btn-primary" style="width:100%;">Submit Report</button>
+  </form>
+</section>
+
+<section id="report-offline" class="card">
+  <h2>Offline & Phone-Based Reporting</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1rem;">
+    <div>
+      <h3><i class="fas fa-sms"></i> SMS Reporting</h3>
+      <pre>REPORT &lt;TYPE&gt; &lt;LOCATION&gt; &lt;DETAILS&gt;</pre>
+      <p>Send to: <a href="sms:+1234567890">+123 456 7890</a></p>
+    </div>
+    <div>
+      <h3><i class="fas fa-mobile-alt"></i> USSD Reporting</h3>
+      <p>Dial <strong>*123#</strong> and follow prompts.</p>
+    </div>
+    <div>
+      <h3><i class="fab fa-whatsapp"></i> WhatsApp Reporting</h3>
+      <a href="https://wa.me/1234567890" class="btn btn-primary" style="background:#25D366;"><i class="fab fa-whatsapp"></i> Message on WhatsApp</a>
+    </div>
+  </div>
+</section>
+
+<!-- <section id="map-section" class="card">
+  <h2>Live Incident Map</h2>
+  <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;">
+    <select id="filterType"><option value="all">All Types</option><option value="illegal_cutting">Illegal Cutting</option><option value="pollution">Pollution</option><option value="damage">Damage</option><option value="disease">Disease</option></select>
+    <select id="filterStatus"><option value="all">All Status</option><option value="new">New</option><option value="in_progress">In Progress</option><option value="resolved">Resolved</option></select>
+    <select id="filterDate"><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="all">All time</option></select>
+  </div>
+  <div id="map"></div>
+</section> -->
+<section id="map-section" class="card">
+  <h2>🔥 Top Reported Locations (Leaderboard)</h2>
+  <p>Areas with the most reports appear at the top.</p>
+  <ol id="leaderboardList" style="padding:1rem; font-size:1.1rem;">
+    <li>Loading leaderboard...</li>
+  </ol>
+</section>
+
+<section id="community" class="card">
+  <h2>Community & Gamification</h2>
+  <h3>Leaderboard</h3>
+  <ol>
+    <li>Sarah Johnson <span class="badge badge-eco">Eco Warrior</span> - 1250 pts</li>
+    <li>Michael Chen <span class="badge badge-protector">Mangrove Protector</span> - 980 pts</li>
+  </ol>
+  <h3>Volunteer Signup</h3>
+  <form id="volunteerForm">
+    <input type="text" id="volunteerName" placeholder="Full Name *" required />
+    <input type="email" id="volunteerEmail" placeholder="Email *" required />
+    <input type="tel" id="volunteerPhone" placeholder="Phone Number" />
+    <textarea id="volunteerSkills" placeholder="Skills & Interests"></textarea>
+    <button type="submit" class="btn btn-primary">Join as Volunteer</button>
+  </form>
+</section>
+
+<section id="education" class="card">
+  <h2>Education Center</h2>
+  <article>
+    <h3>Why Mangroves Matter</h3>
+    <p>Protect coastlines, store carbon, support marine life.</p>
+  </article>
+  <article>
+    <h3>Identify Species</h3>
+    <p>Red, Black, White Mangroves and Buttonwood.</p>
+  </article>
+  <article>
+    <h3>Threats</h3>
+    <p>Illegal cutting, pollution, climate change.</p>
+  </article>
+</section>
+
+<section id="admin" class="card">
+  <h2>Admin Dashboard</h2>
+  <h3>Verify Reports</h3>
+<ul id="adminReportList">
+  <!-- Reports will be dynamically loaded here -->
+</ul>
+
+  
+  <form id="alertForm">
+    <select id="alertRecipients" multiple>
+      <option value="all_volunteers">All Volunteers</option>
+      <option value="local_authorities">Local Authorities</option>
+    </select>
+    <textarea id="alertMessage" placeholder="Alert message"></textarea>
+    <select id="alertPriority"><option>Low</option><option>Medium</option><option>High</option><option>Urgent</option></select>
+    <button type="submit" class="btn btn-primary">Send Alert</button>
+  </form>
+</section>
+<section id="donate" class="card">
+  <h2>Support Us – Make a Donation</h2>
+  <p>Click the button below to pay via Google Pay. Then fill your details for our records.</p>
+
+  <div style="text-align:center; margin:1rem auto; width:200px; border:1px solid #2d5016; border-radius:8px; padding:0.5rem; background:#f0f9f0;">
+    <a href="upi://pay?pa=harshilpanchasara2-2@oksbi&pn=Harshil%20Panchasara&aid=uGICAgMDwh8qwSQ"
+       target="_blank"
+       class="btn btn-primary"
+       style="display:block; text-decoration:none; color:#fff; background:#2d5016; border-radius:5px; padding:0.5rem 0;">
+      Pay via Google Pay
+    </a>
+  </div>
+
+  <form id="donationForm">
+    <label>Name (optional)</label>
+    <input type="text" id="donorName" placeholder="Your name" />
+    <label>Amount (₹) *</label>
+    <input type="number" id="donationAmount" placeholder="Enter amount" required />
+    <label>Upload Photo (optional)</label>
+    <input type="file" id="donorPhoto" accept="image/*" />
+    <button type="submit" class="btn btn-primary" style="margin-top:1rem; width:100%;">Submit Donation</button>
+  </form>
+</section>
+
+
+
+
+<footer>
+  <p>© 2024 Community Mangrove Watch</p>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  // --- Mobile menu toggle ---
+  document.getElementById('menuBtn').onclick = () => {
+    document.getElementById('navLinks').classList.toggle('active');
+  };
+
+  // --- Smooth scroll helper ---
+  function scrollToSection(id) {
+    document.getElementById(id).scrollIntoView({behavior:'smooth'});
+  }
+
+  // --- GPS location fill ---
+  function getLocation() {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(pos => {
+        document.getElementById('location').value =
+          pos.coords.latitude.toFixed(5) + ', ' + pos.coords.longitude.toFixed(5);
+      }, () => alert('Unable to get location'));
+    } else alert('Geolocation not supported');
+  }
+
+  // --- Initialize map ---
+  // const map = L.map('map').setView([0,0],2);
+  // L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  //   attribution:'© OpenStreetMap contributors'
+  // }).addTo(map);
+
+  // // Sample incidents
+  // const incidents = [
+  //   {lat:1.3,lng:103.8,type:'pollution',title:'Plastic Waste',status:'new'},
+  //   {lat:1.35,lng:103.85,type:'illegal_cutting',title:'Illegal Cutting',status:'in_progress'},
+  //   {lat:1.4,lng:103.9,type:'disease',title:'Mangrove Disease',status:'resolved'}
+  // ];
+
+  // const markers = [];
+  // function loadMarkers(filterType='all', filterStatus='all') {
+  //   markers.forEach(m => map.removeLayer(m));
+  //   markers.length = 0;
+  //   incidents.forEach(i => {
+  //     if ((filterType==='all'||i.type===filterType) && (filterStatus==='all'||i.status===filterStatus)) {
+  //       const m = L.marker([i.lat, i.lng])
+  //         .addTo(map)
+  //         .bindPopup(`<b>${i.title}</b><br>Type: ${i.type}<br>Status: ${i.status}`);
+  //       markers.push(m);
+  //     }
+  //   });
+  // }
+  // loadMarkers();
+
+  // document.getElementById('filterType').onchange = e => loadMarkers(e.target.value, document.getElementById('filterStatus').value);
+  // document.getElementById('filterStatus').onchange = e => loadMarkers(document.getElementById('filterType').value, e.target.value);
+
+  // --- REPORT FORM ---
+  document.getElementById('reportForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const data = {
+      name: document.getElementById('name').value,
+      issueType: document.getElementById('issueType').value,
+      location: document.getElementById('location').value,
+      description: document.getElementById('description').value,
+      dateTime: document.getElementById('dateTime').value
+    };
+    try {
+      const res = await fetch('http://127.0.0.1:3000/api/reports', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) throw new Error('Network response was not ok');
+      await res.json();
+      alert('Report submitted successfully!');
+      e.target.reset();
+      loadMarkers();
+    } catch (err) {
+      alert('Error submitting report: ' + err.message);
+    }
+  };
+
+  // --- VOLUNTEER FORM ---
+  document.getElementById('volunteerForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const data = {
+      name: document.getElementById('volunteerName').value,
+      email: document.getElementById('volunteerEmail').value,
+      phone: document.getElementById('volunteerPhone').value,
+      skills: document.getElementById('volunteerSkills').value
+    };
+    try {
+      const res = await fetch('http://127.0.0.1:3000/api/volunteers', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) throw new Error('Network response was not ok');
+      await res.json();
+      alert('Thank you for volunteering!');
+      e.target.reset();
+    } catch (err) {
+      alert('Error submitting volunteer: ' + err.message);
+    }
+  };
+
+  // --- ALERT FORM ---
+  document.getElementById('alertForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const data = {
+      recipients: Array.from(document.getElementById('alertRecipients').selectedOptions).map(opt=>opt.value),
+      message: document.getElementById('alertMessage').value,
+      priority: document.getElementById('alertPriority').value
+    };
+    try {
+      const res = await fetch('http://127.0.0.1:3000/api/alerts', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(data)
+      });
+      if (!res.ok) throw new Error('Network response was not ok');
+      await res.json();
+      alert('Alert sent successfully!');
+      e.target.reset();
+    } catch (err) {
+      alert('Error sending alert: ' + err.message);
+    }
+  };
+
+  // --- VOLUNTEER FORM ---
+document.getElementById('volunteerForm').onsubmit = async (e) => {
+  e.preventDefault();
+
+  const data = {
+    name: document.getElementById('volunteerName').value,
+    email: document.getElementById('volunteerEmail').value,
+    phone: document.getElementById('volunteerPhone').value,
+    skills: document.getElementById('volunteerSkills').value
+  };
+
+  try {
+    const res = await fetch('http://127.0.0.1:3000/api/volunteers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message || 'Error submitting volunteer');
+
+    alert('Thank you for volunteering!');
+    e.target.reset();
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+};
+// --- REPORT FORM ---
+document.getElementById('reportForm').onsubmit = async (e) => {
+  e.preventDefault();
+
+  const data = {
+    name: document.getElementById('name').value,
+    issueType: document.getElementById('issueType').value,
+    location: document.getElementById('location').value,
+    description: document.getElementById('description').value,
+    dateTime: document.getElementById('dateTime').value
+  };
+
+  try {
+    const res = await fetch('http://127.0.0.1:3000/api/reports', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+
+    const result = await res.json();
+    if (!res.ok) throw new Error('Error submitting report');
+
+    alert('Report submitted successfully!');
+    e.target.reset();
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+};
+async function updateTotalReports() {
+  try {
+    const res = await fetch('http://127.0.0.1:3000/api/reports');
+    if (!res.ok) throw new Error('Network response was not ok');
+    const reports = await res.json();
+    document.getElementById('totalReports').textContent = reports.length;
+  } catch (err) {
+    console.error('Error fetching total reports:', err);
+  }
+}
+
+// Call it on page load
+updateTotalReports();
+async function loadAdminReports() {
+  try {
+    const res = await fetch('http://127.0.0.1:3000/api/reports');
+    if (!res.ok) throw new Error('Network response was not ok');
+    const reports = await res.json();
+    const list = document.getElementById('adminReportList');
+    list.innerHTML = '';
+
+    reports.forEach(report => {
+      const li = document.createElement('li');
+      li.innerHTML = `
+        ${report.issueType} at ${report.location} 
+        <button class="btn btn-primary" onclick="approveReport(${report.id})">Approve</button>
+        <button class="btn btn-secondary" onclick="rejectReport(${report.id})">Reject</button>
+      `;
+      list.appendChild(li);
+    });
+  } catch (err) {
+    console.error('Error loading admin reports:', err);
+  }
+}
+
+// Call on page load
+loadAdminReports();
+async function approveReport(id) {
+  try {
+    const res = await fetch(`http://127.0.0.1:3000/api/reports/${id}/approve`, { method: 'POST' });
+    if (!res.ok) throw new Error('Failed to approve report');
+    alert('Report approved!');
+    loadAdminReports();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function rejectReport(id) {
+  try {
+    const res = await fetch(`http://127.0.0.1:3000/api/reports/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete report');
+    alert('Report rejected and deleted!');
+    loadAdminReports();
+    updateTotalReports(); // optional: refresh the total reports counter
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+
+
+</script>
+
+
+</body>
+</html>
